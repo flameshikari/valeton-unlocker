@@ -1,0 +1,14 @@
+FROM debian:trixie
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 python3-pyelftools python3-requests \
+        git cmake ninja-build build-essential pkg-config \
+        libicu-dev libcapstone-dev curl ca-certificates xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 https://github.com/worawit/blutter.git /opt/blutter \
+    && chmod -R a+rwX /opt/blutter
+
+WORKDIR /opt/blutter

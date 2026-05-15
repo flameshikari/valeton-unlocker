@@ -1,0 +1,55 @@
+name: Patch APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      apk_url:
+        description: "URL of the original Valeton Suite APK to download and patch"
+        required: true
+      diagnostic:
+        description: "Also rewrite the trigger toast text with a visible marker"
+        type: boolean
+        default: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download original APK
+        run: |
+          mkdir -p in out
+          curl -fsSL --retry 3 --output in/original.apk "${{ inputs.apk_url }}"
+          file in/original.apk | tee /dev/stderr | grep -q 'Android package' \
+            || { echo "::error::downloaded file is not an APK"; exit 1; }
+
+      - name: Apply patch
+        run: |
+          ARGS=(-i in/original.apk -o out/patched.apk)
+          if [[ "${{ inputs.diagnostic }}" == "true" ]]; then
+            ARGS+=(--diagnostic)
+          fi
+          python3 tools/patch_apk.py "${ARGS[@]}"
+
+      - name: Re-sign
+        run: ./tools/sign_apk.sh out/patched.apk
+
+      - name: Compute SHA-256
+        run: |
+          cd out
+          sha256sum patched-signed.apk | tee patched-signed.apk.sha256
+
+      - name: Upload patched APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: valeton-suite-patched
+          path: |
+            out/patched-signed.apk
+            out/patched-signed.apk.sha256
+          retention-days: 14
+          if-no-files-found: error
