@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       apk_url:
-        description: URL of APK
+        description: URL of the original APK (or a ZIP archive containing one — e.g. the .zip from valeton.net/download)
         required: true
 
 jobs:
@@ -18,11 +18,33 @@ jobs:
           python-version: '3.12'
 
       - name: Download original APK
+        env:
+          APK_URL: ${{ inputs.apk_url }}
         run: |
+          set -euo pipefail
           mkdir -p in out
-          curl -fsSL --retry 3 --output in/original.apk "${{ inputs.apk_url }}"
-          file in/original.apk | tee /dev/stderr | grep -q 'Android package' \
-            || { echo "::error::downloaded file is not an APK"; exit 1; }
+          curl -fsSL --retry 3 --output in/download "$APK_URL"
+          KIND=$(file -b in/download)
+          echo "downloaded: $KIND"
+
+          case "$KIND" in
+              *"Android package"*|*"Java archive data (JAR)"*)
+                  mv in/download in/original.apk
+                  ;;
+              *"Zip archive"*)
+                  unzip -j -o in/download '*.apk' -d in
+                  APK=$(find in -maxdepth 1 -name '*.apk' | head -1)
+                  [[ -n "$APK" ]] || { echo "::error::no .apk inside the downloaded ZIP"; exit 1; }
+                  mv "$APK" in/original.apk
+                  ;;
+              *)
+                  echo "::error::downloaded file is neither an APK nor a ZIP ($KIND)"
+                  exit 1
+                  ;;
+          esac
+
+          file in/original.apk | grep -q 'Android package' \
+              || { echo "::error::extracted file is not an APK"; exit 1; }
 
       - name: Apply patch
         run: |

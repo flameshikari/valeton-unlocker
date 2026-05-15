@@ -11,18 +11,16 @@ Chinese when it connects to a Chinese-region pedal. Four bytes change in
 ## Disclaimer
 
 The re-signed APK is not endorsed by Valeton / Sonicake. The original APK
-is not distributed in this repository — you obtain it yourself.
+is not distributed in this repository — grab it yourself from [Valeton](https://www.valeton.net/software/#138-170-wpfd-android).
 
 ## Option A — Patch via GitHub Actions
 
 If you forked this repo on GitHub:
 
-1. Open **Actions → Patch APK → Run workflow**.
-2. Paste a direct download URL of the original Valeton Suite APK.
-3. (Optional) flip the *diagnostic* toggle to embed a visible marker in
-   the auto-switch toast — useful for verifying the patched `.so` is the
-   one actually loaded.
-4. Wait ~1 minute, download the `valeton-suite-patched` artifact, install:
+1. Open **[Actions → Patch APK](../../actions/workflows/patch.yml) → Run workflow**.
+2. Paste a direct download URL of the original Valeton Suite APK, or of
+   the ZIP archive containing it and run it.
+3. Wait ~1 minute, download the `valeton-suite-patched` artifact, install:
    ```bash
    adb uninstall com.sonicake.gp_5
    adb install patched-signed.apk
