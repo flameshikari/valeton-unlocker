@@ -6,14 +6,14 @@ Chinese when it connects to a Chinese-region pedal. Four bytes change in
 
 > **Tested on**: Valeton Suite **V2.0.4** for Android, GP-5 BLE pedal.
 > Other versions may need fresh byte signatures — see
-> [_For developers_](#for-developers-porting-to-a-new-app-version) below.
+> [_For developers_](#for-developers) below.
 
 ## Disclaimer
 
 The re-signed APK is not endorsed by Valeton / Sonicake. The original APK
 is not distributed in this repository — you obtain it yourself.
 
-## Option A — patch via GitHub Actions (no local setup)
+## Option A — Patch via GitHub Actions
 
 If you forked this repo on GitHub:
 
@@ -32,7 +32,7 @@ The APK is signed with a throw-away debug key — Android will warn that
 the signing certificate differs from the Play Store version, which is
 normal for self-signed builds.
 
-## Option B — patch locally
+## Option B — Patch Locally
 
 Requirements: Python 3.9+ (no third-party packages), Docker (for
 re-signing without polluting the host), and `adb`.
@@ -50,7 +50,7 @@ adb install patched-signed.apk
 
 Connect the pedal — the app stays in English.
 
-## How it works
+## How It Works
 
 The Valeton Suite Flutter app reads a language code from the pedal during
 the BLE handshake and runs roughly this code (recovered from
@@ -66,7 +66,7 @@ The patcher rewrites the single ARM64 conditional branch at `libapp.so`
 offset `0x6c159c`: `b.ne` becomes `b`, so the right-hand side is taken
 unconditionally and `lang` is always `"en"`. Four bytes change.
 
-## Repository layout
+## Repository Layout
 
 ```
 .
@@ -78,12 +78,12 @@ unconditionally and `lang` is always `"en"`. Four bytes change.
 │       ├── run_blutter.sh         # decompile libapp.so with blutter
 │       └── capture_logcat.sh      # capture Flutter logs at connect time
 └── .github/workflows/
-    └── patch-apk.yml              # workflow_dispatch: URL → patched APK artefact
+    └── patch.yml              # workflow_dispatch: URL → patched APK artefact
 ```
 
 The repo never stores APKs, keystores, or any other binary inputs / outputs.
 
-## For developers (porting to a new app version)
+## For Developers
 
 If Valeton ships a new Suite version and the byte signature in
 `patch_apk.py` no longer matches, regenerate it:
@@ -107,7 +107,3 @@ To capture what the app does on the wire at connect time:
 ./tools/dev/capture_logcat.sh logs/pedal-connect.log
 # now connect the pedal; Ctrl-C once you see the toast
 ```
-
-## License
-
-GPL-3.0 — see [LICENSE](LICENSE).
