@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       apk_url:
-        description: URL of the original APK (or a ZIP archive containing one — e.g. the .zip from valeton.net/download)
+        description: URL of APK or ZIP w/ APK
         required: true
 
 jobs:
   patch:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
 
@@ -52,7 +52,43 @@ jobs:
           python3 tools/patch_apk.py "${ARGS[@]}"
 
       - name: Re-sign
-        run: ./tools/sign_apk.sh out/patched.apk
+        env:
+          APK_KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
+          APK_KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+          APK_KEYSTORE_PASSWORD: ${{ secrets.APK_KEYSTORE_PASSWORD }}
+          APK_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          CUSTOM_VALUES=(
+            "$APK_KEYSTORE_BASE64"
+            "$APK_KEY_ALIAS"
+            "$APK_KEYSTORE_PASSWORD"
+          )
+          CUSTOM_COUNT=0
+          for VALUE in "${CUSTOM_VALUES[@]}"; do
+            [[ -n "$VALUE" ]] && CUSTOM_COUNT=$((CUSTOM_COUNT + 1))
+          done
+
+          CUSTOM_REQUESTED="$CUSTOM_COUNT"
+          [[ -n "$APK_KEY_PASSWORD" ]] && CUSTOM_REQUESTED=$((CUSTOM_REQUESTED + 1))
+          if [[ "$CUSTOM_REQUESTED" -ne 0 && "$CUSTOM_COUNT" -ne 3 ]]; then
+            echo "::error::custom signing requires APK_KEYSTORE_BASE64, APK_KEY_ALIAS, and APK_KEYSTORE_PASSWORD"
+            exit 1
+          fi
+
+          if [[ "$CUSTOM_COUNT" -eq 3 ]]; then
+            KEYSTORE_PATH="in/custom-signing.keystore"
+            trap 'rm -f "$KEYSTORE_PATH"' EXIT
+            printf '%s' "$APK_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+            chmod 600 "$KEYSTORE_PATH"
+            KEYSTORE="$KEYSTORE_PATH" \
+            KEY_ALIAS="$APK_KEY_ALIAS" \
+            KEY_PASS="$APK_KEYSTORE_PASSWORD" \
+            KEY_KEY_PASS="${APK_KEY_PASSWORD:-$APK_KEYSTORE_PASSWORD}" \
+              ./tools/sign_apk.sh out/patched.apk
+          else
+            ./tools/sign_apk.sh out/patched.apk
+          fi
 
       - name: Compute SHA-256
         run: |

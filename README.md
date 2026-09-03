@@ -4,7 +4,9 @@ Stops the **Valeton Suite Android app** from force-switching its UI to
 Chinese when it connects to a Chinese-region pedal. Four bytes change in
 `lib/arm64-v8a/libapp.so`, the rest of the snapshot is bit-identical.
 
-> **Tested on**: Valeton Suite **V2.0.4** for Android, GP-5 BLE pedal.
+> **Supported APKs**: Valeton Suite **V2.0.4** and **V2.1.0** for Android.
+> The patch was hardware-tested with V2.0.4 and a GP-5 BLE pedal; V2.1.0 was
+> verified by decompilation and binary inspection.
 > Other versions may need fresh byte signatures — see
 > [_For developers_](#for-developers) below.
 
@@ -26,9 +28,18 @@ If you forked this repo on GitHub:
    adb install patched-signed.apk
    ```
 
-The APK is signed with a throw-away debug key — Android will warn that
-the signing certificate differs from the Play Store version, which is
-normal for self-signed builds.
+Without additional configuration, the APK is signed with a throw-away debug
+key. To use your own key, add these repository Actions secrets:
+
+- `APK_KEYSTORE_BASE64` — the keystore encoded with `base64 -w0 key.jks`;
+- `APK_KEY_ALIAS` — key alias;
+- `APK_KEYSTORE_PASSWORD` — keystore password;
+- `APK_KEY_PASSWORD` — key password (optional; defaults to the keystore password).
+
+All three required secrets must be set together. The decoded keystore exists
+only for the signing step and is not included in the workflow artifact. Using
+the same custom key for every build allows Android to install updates without
+uninstalling the previous patched version.
 
 ## Option B — Patch Locally
 
@@ -37,16 +48,24 @@ re-signing without polluting the host), and `adb`.
 
 ```bash
 python3 tools/patch_apk.py \
-    -i "Valeton Suite V2.0.4 for Android.apk" \
+    -i "Valeton Suite V2.1.0 for Android.apk" \
     -o patched.apk
 
 ./tools/sign_apk.sh patched.apk
+
+# Or sign locally with an existing keystore:
+KEYSTORE=.keys/release.jks KEY_ALIAS=mykey KEY_PASS=secret \
+    KEY_KEY_PASS=secret ./tools/sign_apk.sh patched.apk
 
 adb uninstall com.sonicake.gp_5
 adb install patched-signed.apk
 ```
 
 Connect the pedal — the app stays in English.
+
+The patcher reads `versionCode` from the APK manifest and selects the matching
+version-specific patch (`206` for V2.0.4, `214` for V2.1.0). To override the
+detected value explicitly, pass `--version-code 206` or `--version-code 214`.
 
 ## How It Works
 
@@ -61,7 +80,7 @@ staticState.currentLanguage = lang;          // drives the locale
 ```
 
 The patcher rewrites the single ARM64 conditional branch at `libapp.so`
-offset `0x6c159c`: `b.ne` becomes `b`, so the right-hand side is taken
+offset `0x645ea4` in V2.1.0 (`0x6c159c` in V2.0.4): `b.ne` becomes `b`, so the right-hand side is taken
 unconditionally and `lang` is always `"en"`. Four bytes change.
 
 ## Repository Layout
