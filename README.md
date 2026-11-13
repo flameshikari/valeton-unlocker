@@ -1,126 +1,96 @@
-# Valeton Suite English Patch
+# Valeton Unlocker
 
-Stops the **Valeton Suite Android app** from force-switching its UI to
-Chinese when it connects to a Chinese-region pedal. Four bytes change in
-`lib/arm64-v8a/libapp.so`, the rest of the snapshot is bit-identical.
+A static web app for changing the language of supported Valeton pedals over USB MIDI or Bluetooth LE MIDI. It requires only a Chromium-based browser on a computer or phone — no installation, account, server, or Valeton application.
 
-> **Supported APKs**: Valeton Suite **V2.0.4** and **V2.1.0** for Android.
-> The patch was hardware-tested with V2.0.4 and a GP-5 BLE pedal; V2.1.0 was
-> verified by decompilation and binary inspection.
-> Other versions may need fresh byte signatures — see
-> [_For developers_](#for-developers) below.
+Based on the original idea and main script implementation by [Olegas](https://github.com/Olegas). The [original research notes and script](docs/olegas/) are preserved in this repository for history and attribution.
 
-## Disclaimer
+This repository previously used a different approach that patched the Valeton application itself. That implementation is preserved in the [legacy branch](https://github.com/flameshikari/valeton-suite-en/tree/legacy); the current project communicates with the pedal directly and does not modify the application.
 
-The re-signed APK is not endorsed by Valeton / Sonicake. The original APK
-is not distributed in this repository — grab it yourself from [Valeton](https://www.valeton.net/software/#138-170-wpfd-android).
+## ⚠️ Disclaimer
 
-## Option A — Patch via GitHub Actions
+This is an unofficial community project and is not affiliated with or endorsed by Valeton. Use it at your own risk. Although the app restricts communication to the commands needed to read the pedal and change its language, hardware and firmware behavior may differ. Keep backups of your presets and settings before using it. The authors are not responsible for data loss, device malfunction, or other damage.
 
-If you forked this repo on GitHub:
+## 🚧 Limitations
 
-1. Open **[Actions → Patch APK](../../actions/workflows/patch.yml) → Run workflow**.
-2. Paste a direct download URL of the original Valeton Suite APK, or of
-   the ZIP archive containing it and run it.
-3. Wait ~1 minute, download the `valeton-suite-patched` artifact, install:
-   ```bash
-   adb uninstall com.sonicake.gp_5
-   adb install patched-signed.apk
-   ```
+- Only Chromium-based browsers are supported.
+- The page must be opened over HTTPS or from localhost via the webserver; hardware access is unavailable on an ordinary insecure HTTP origin.
+- USB access requires Web MIDI with SysEx support. Bluetooth access requires Web Bluetooth and Bluetooth LE MIDI support.
+- Only explicitly listed devices and firmware versions have been tested.
 
-Without additional configuration, the APK is signed with a throw-away debug
-key. To use your own key, add these repository Actions secrets:
+## ✅ Tested Devices
 
-- `APK_KEYSTORE_BASE64` — the keystore encoded with `base64 -w0 key.jks`;
-- `APK_KEY_ALIAS` — key alias;
-- `APK_KEYSTORE_PASSWORD` — keystore password;
-- `APK_KEY_PASSWORD` — key password (optional; defaults to the keystore password).
+- Valeton GP-5, firmware `1.0.6`: USB MIDI and Bluetooth LE MIDI.
 
-All three required secrets must be set together. The decoded keystore exists
-only for the signing step and is not included in the workflow artifact. Using
-the same custom key for every build allows Android to install updates without
-uninstalling the previous patched version.
+Other Valeton models and firmware versions have not been tested. The app identifies only explicitly supported devices and reports untested firmware before a language change.
 
-## Option B — Patch Locally
+The project uses separate model profiles to allow future expansion. GP-5 is currently the only tested model; GP-50 is the closest candidate for further investigation, while it is not yet clear whether other models expose a compatible language-switching mechanism. As that becomes better understood, the project may be expanded or renamed to reflect its actual scope.
 
-Requirements: Python 3.9+ (no third-party packages), Docker (for
-re-signing without polluting the host), and `adb`.
+## 🚀 Usage
 
-```bash
-python3 tools/patch_apk.py \
-    -i "Valeton Suite V2.1.0 for Android.apk" \
-    -o patched.apk
+> [!WARNING]
+> Close Valeton Suite and any other application using the pedal before continuing.
 
-./tools/sign_apk.sh patched.apk
+### 🌐 Ready-to-use
 
-# Or sign locally with an existing keystore:
-KEYSTORE=.keys/release.jks KEY_ALIAS=mykey KEY_PASS=secret \
-    KEY_KEY_PASS=secret ./tools/sign_apk.sh patched.apk
+1. Open [vu.hexed.pw](https://vu.hexed.pw/) in Chrome, Edge, or another Chromium-based browser.
+2. Choose the connection type:
+   - **USB:** connect the pedal to the computer, select USB on the page, approve MIDI access, then choose the pedal from the device list.
+   - **Bluetooth:** put the pedal into pairing mode, select Bluetooth on the page, then find and choose the pedal in the browser's device list.
+3. Select one or more languages.
+4. Review the selection, press the arrow button, and wait for the page to read the pedal state back and confirm the change.
 
-adb uninstall com.sonicake.gp_5
-adb install patched-signed.apk
+### 🐳 Docker
+
+Build and serve the app with Docker Compose:
+
+```sh
+docker compose up --build
 ```
 
-Connect the pedal — the app stays in English.
+Open <http://localhost:8080>, then follow [Ready-to-use](#-ready-to-use) starting from step 2.
 
-The patcher reads `versionCode` from the APK manifest and selects the matching
-version-specific patch (`206` for V2.0.4, `214` for V2.1.0). To override the
-detected value explicitly, pass `--version-code 206` or `--version-code 214`.
+### ⌨️ Python
 
-## How It Works
+```sh
+# Read the connected pedal's port, Device ID, firmware, and current language (Windows USB MIDI)
+python tools/valeton_unlocker.py
 
-The Valeton Suite Flutter app reads a language code from the pedal during
-the BLE handshake and runs roughly this code (recovered from
-`lib/arm64-v8a/libapp.so` with [blutter](https://github.com/worawit/blutter)):
+# Set English, Chinese, or both languages
+python tools/valeton_unlocker.py --en
+python tools/valeton_unlocker.py --zh
+python tools/valeton_unlocker.py --both
 
-```dart
-int code = coverCharListToInt(pedalReportedLanguageBytes);
-String lang = (code == 1) ? "zh" : "en";    // <-- this branch
-staticState.currentLanguage = lang;          // drives the locale
+# Check and print the SysEx frames without writing to the pedal
+python tools/valeton_unlocker.py --en --dry-run
+
+# Generate an activation code offline; --days controls its validity period
+python tools/valeton_unlocker.py --make-code <DEVICE_ID> --en
+python tools/valeton_unlocker.py --make-code <DEVICE_ID> --both --days 3650
+
+# Decode a code and optionally verify that it belongs to the Device ID
+python tools/valeton_unlocker.py --decode-code <HEX_CODE> --device-id <DEVICE_ID>
+
+# Test the cipher, activation-code round trip, and protocol framing without a pedal
+python tools/valeton_unlocker.py --self-test
+
+# Show all options; use --force with care to bypass USB safety checks
+python tools/valeton_unlocker.py --help
 ```
 
-The patcher rewrites the single ARM64 conditional branch at `libapp.so`
-offset `0x645ea4` in V2.1.0 (`0x6c159c` in V2.0.4): `b.ne` becomes `b`, so the right-hand side is taken
-unconditionally and `lang` is always `"en"`. Four bytes change.
+## 🛠️ Development
 
-## Repository Layout
+Install Node.js 20 or newer, then use npm:
 
-```
-.
-├── tools/
-│   ├── patch_apk.py               # libapp.so patcher
-│   ├── sign_apk.sh                # zipalign + apksigner in Docker
-│   └── dev/                       # research / extension tools
-│       ├── Dockerfile.blutter
-│       ├── run_blutter.sh         # decompile libapp.so with blutter
-│       └── capture_logcat.sh      # capture Flutter logs at connect time
-└── .github/workflows/
-    └── patch.yml              # workflow_dispatch: URL → patched APK artefact
+```sh
+npm ci
+npm test
+npm run build
 ```
 
-The repo never stores APKs, keystores, or any other binary inputs / outputs.
+The build generates a single static file at `dist/index.html`. Serve it locally with:
 
-## For Developers
-
-If Valeton ships a new Suite version and the byte signature in
-`patch_apk.py` no longer matches, regenerate it:
-
-```bash
-# 1. Unzip the APK locally:
-unzip -o "Valeton Suite V2.0.X.apk" -d apk_unpacked
-
-# 2. Decompile lib/arm64-v8a/libapp.so. The first run downloads the
-# matching Dart SDK and builds blutter (~30 min, cached afterwards).
-./tools/dev/run_blutter.sh
-
-# 3. Open blutter_out/asm/gp_5/model/global_model.dart and find the new
-# offset of the `cmp x0, #1 ; b.ne ...` pair inside
-# updateGlobalLanguage. Update the byte signature in tools/patch_apk.py.
+```sh
+npm run serve
 ```
 
-To capture what the app does on the wire at connect time:
-
-```bash
-./tools/dev/capture_logcat.sh logs/pedal-connect.log
-# now connect the pedal; Ctrl-C once you see the toast
-```
+The server listens on `0.0.0.0:8080`. Open <http://localhost:8080> on the same computer.

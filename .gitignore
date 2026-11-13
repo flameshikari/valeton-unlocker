@@ -1,24 +1,7 @@
-# Binary artefacts — never tracked
-*.apk
-*.idsig
-*.keystore
-
-# Working dirs
-in/
-out/
-logs/
-
-# Python
+node_modules/
+dist/
 __pycache__/
-*.pyc
+*.py[cod]
 .venv/
-venv/
-.ruff_cache/
-
-# Editors
-.idea/
-.vscode/
-*.swp
-
-# Local tooling state
-.claude/
+.DS_Store
+Thumbs.db
