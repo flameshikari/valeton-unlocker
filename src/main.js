@@ -1,6 +1,6 @@
 import "./styles.css";
-import "bigger-picture/css";
-import BiggerPicture from "bigger-picture";
+import "@twistedandy/bigger-picture/css";
+import BiggerPicture from "@twistedandy/bigger-picture";
 import { isAllowedPageLocation, supportedConnections } from "./browser.js";
 import { modelForBleName, modelForMidiPort, modelName, models } from "./models/index.js";
 

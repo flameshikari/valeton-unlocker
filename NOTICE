@@ -12,10 +12,11 @@ License. Their inclusion does not grant permission for reuse or redistribution.
 This is an unofficial community project. It is not affiliated with, authorized
 by, sponsored by, or endorsed by Valeton or its owners.
 
-This project includes Bigger Picture, licensed under the MIT License:
+This project includes the TwistedAndy fork of Bigger Picture, maintained by
+Andrii Toniievych and licensed under the MIT License:
 
     Copyright (c) Henry Dollman <hank@henrygd.me> (henrygd.me)
-    https://github.com/henrygd/bigger-picture
+    https://github.com/TwistedAndy/bigger-picture
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the "Software"),
