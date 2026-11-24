@@ -1,9 +1,11 @@
 {
   "name": "valeton-unlocker",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node src/scripts/build.mjs",
+    "build:go": "npm run build && node src/scripts/build-go.mjs",
     "test": "node --test",
     "serve": "npx --yes serve dist --listen tcp://0.0.0.0:8080 --no-clipboard"
   },

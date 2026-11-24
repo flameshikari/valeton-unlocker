@@ -4,6 +4,8 @@
 .dockerignore
 node_modules/
 dist/
+bin/
+server/public/
 pre-reset-dump/
 **/__pycache__/
 **/*.py[cod]

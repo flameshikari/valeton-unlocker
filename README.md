@@ -94,3 +94,16 @@ npm run serve
 ```
 
 The server listens on `0.0.0.0:8080`. Open <http://localhost:8080> on the same computer.
+
+### Standalone executable
+
+Install Go 1.22 or newer, then build a binary with the page embedded:
+
+```sh
+npm run build:go
+./bin/valeton-unlocker
+```
+
+On Windows, double-click `bin\valeton-unlocker.exe` to open the page in a WebView2 window without a terminal. If the WebView2 Runtime is unavailable, the executable opens the page in the default browser instead. Both modes choose a free local port. External links open in the default browser. The WebView2 window disables DevTools and its context menu, blocks browser shortcuts, downloads through page links, print commands, file drops, and new windows. The executable embeds its icon, file and product version, author, description, and project link as Windows resources. Windows 11 24H2 and newer use a detached console manifest so terminal commands wait and print normally while Explorer starts the GUI without a console. Earlier Windows versions start a detached GUI child.
+
+Use `bin\valeton-unlocker.exe -h` or `--help` for colored CLI help. `-v`/`--version` prints the version; `-s`/`--headless` runs only the HTTP server on <http://localhost:8080>. `-H`/`--host` changes the address and `-p`/`--port` changes the port. To cross-compile from Linux, use `GOOS=windows GOARCH=amd64 npm run build:go`. GitHub Actions builds Linux, macOS, and Windows binaries for amd64 and arm64, compresses Linux and Windows binaries with UPX, and attaches them to a GitHub Release for a version tag.

@@ -9,7 +9,15 @@ COPY src/ ./src/
 COPY tests/ ./tests/
 RUN npm test && npm run build
 
-FROM dhi.io/nginx:1.31.8-alpine3.23@sha256:4776f3e4713a1a74d640a7402bd13804962b1b5e2fbcfa149b175177bafb9de5
+FROM golang:1.24-alpine AS go-build
+WORKDIR /app/server
+COPY server/go.mod server/go.sum ./
+COPY server/*.go ./
+COPY --from=build /app/dist/index.html ./public/index.html
+RUN CGO_ENABLED=0 go test ./... && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /valeton-unlocker .
 
-COPY --from=build /app/dist/ /usr/share/nginx/html/
+FROM scratch
+COPY --from=go-build /valeton-unlocker /valeton-unlocker
+USER 65532:65532
 EXPOSE 8080
+ENTRYPOINT ["/valeton-unlocker", "-host", "0.0.0.0"]

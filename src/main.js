@@ -182,7 +182,8 @@ function openPedalPicture() {
     const image = modelImage(model);
     picture.open({
       items: [{
-        img: image.src,
+        link: image.src,
+        type: "image",
         thumb: image.src,
         alt: model.label,
         width: image.width,
