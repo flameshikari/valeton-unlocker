@@ -30,7 +30,7 @@ The project uses separate model profiles to allow future expansion. GP-5 is curr
 > [!WARNING]
 > Close Valeton Suite and any other application using the pedal before continuing.
 
-### 🌐 Ready-to-use
+### 🌐 Online
 
 1. Open [vu.hexed.pw](https://vu.hexed.pw/) in Chrome, Edge, or another Chromium-based browser.
 2. Choose the connection type:
@@ -38,6 +38,15 @@ The project uses separate model profiles to allow future expansion. GP-5 is curr
    - **Bluetooth:** put the pedal into pairing mode, select Bluetooth on the page, then find and choose the pedal in the browser's device list.
 3. Select one or more languages.
 4. Review the selection, press the arrow button, and wait for the page to read the pedal state back and confirm the change.
+
+### 💾 Executable
+
+The [Releases](https://github.com/flameshikari/valeton-unlocker/releases) page is the place for standalone binaries.
+
+Extract the archive for your system, run the executable and open <http://localhost:8080> in a Chromium-based browser.
+
+> [!NOTE]
+> On Windows, `valeton-unlocker.exe` opens a WebView2 window; if the WebView2 Runtime is unavailable, it opens the page in your default browser. For a server without a window, use `valeton-unlocker.exe --headless` on Windows. `--help` for more.
 
 ### 🐳 Docker
 
@@ -47,7 +56,7 @@ Build and serve the app with Docker Compose:
 docker compose up --build
 ```
 
-Open <http://localhost:8080>, then follow [Ready-to-use](#-ready-to-use) starting from step 2.
+Open <http://localhost:8080>, then follow [Online](#-online) starting from step 2.
 
 ### ⌨️ Python
 
@@ -94,16 +103,3 @@ npm run serve
 ```
 
 The server listens on `0.0.0.0:8080`. Open <http://localhost:8080> on the same computer.
-
-### Standalone executable
-
-Install Go 1.22 or newer, then build a binary with the page embedded:
-
-```sh
-npm run build:go
-./bin/valeton-unlocker
-```
-
-On Windows, double-click `bin\valeton-unlocker.exe` to open the page in a WebView2 window without a terminal. If the WebView2 Runtime is unavailable, the executable opens the page in the default browser instead. Both modes choose a free local port. External links open in the default browser. The WebView2 window disables DevTools and its context menu, blocks browser shortcuts, downloads through page links, print commands, file drops, and new windows. The executable embeds its icon, file and product version, author, description, and project link as Windows resources. Windows 11 24H2 and newer use a detached console manifest so terminal commands wait and print normally while Explorer starts the GUI without a console. Earlier Windows versions start a detached GUI child.
-
-Use `bin\valeton-unlocker.exe -h` or `--help` for colored CLI help. `-v`/`--version` prints the version; `-s`/`--headless` runs only the HTTP server on <http://localhost:8080>. `-H`/`--host` changes the address and `-p`/`--port` changes the port. To cross-compile from Linux, use `GOOS=windows GOARCH=amd64 npm run build:go`. GitHub Actions builds Linux, macOS, and Windows binaries for amd64 and arm64, compresses Linux and Windows binaries with UPX, and attaches them to a GitHub Release for a version tag.
